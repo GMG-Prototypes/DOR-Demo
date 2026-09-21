@@ -1,0 +1,14 @@
+work on demo. Add Massachusetts symbol and add color to the palette
+
+then work on getting the buttons in order
+
+get audio recordings
+
+if nothing gets played in 180 seconds have the system refresh and start back at the beginning.
+
+
+
+
+# Fold Poster Board Ideas
+ Allow a section for others to put their ideas
+ bnhj8u 

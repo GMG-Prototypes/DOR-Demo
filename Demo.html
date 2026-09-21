@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOR Interactive Phone Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #0c2340;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .phone-container {
+      background: #ffffff;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .header {
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      color: #0b3954;
+    }
+    .status-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 1.05rem;
+      color: #334155;
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-call {
+      background: #10b981;
+      color: white;
+      font-size: 1.3rem;
+      padding: 20px;
+    }
+    .btn-menu {
+      background: #0284c7;
+      color: white;
+      text-align: left;
+      justify-content: flex-start;
+    }
+    .btn-mic {
+      background: #6366f1;
+      color: white;
+    }
+    .btn-mic.listening {
+      background: #ef4444;
+      animation: pulse 1.5s infinite;
+    }
+    .btn-reset {
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 0.95rem;
+      padding: 10px;
+    }
+    .menu-group, .voice-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .text-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .text-input-row input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .btn-send {
+      background: #0f172a;
+      color: white;
+      padding: 0 20px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone-container">
+  <div class="header">
+    <h1>Department of Revenue</h1>
+    <p style="margin: 4px 0 0; color: #64748b; font-size: 0.9rem;">Five9 Demonstration</p>
+  </div>
+
+  <!-- Status readout screen -->
+  <div id="statusBox" class="status-card">
+    Press "Call DOR" to start the simulated call.
+  </div>
+
+  <!-- Screen 1: Start Call -->
+  <button id="callBtn" class="btn btn-call" onclick="startCall()">
+    📞 Call DOR
+  </button>
+
+  <!-- Screen 2: Interactive Menu Options -->
+  <div id="menuScreen" class="menu-group hidden">
+    <button class="btn btn-menu" onclick="handleMenuSelection('1', 'Income Tax Refund')">
+      Press 1: Income tax Refund
+    </button>
+    <button class="btn btn-menu" onclick="handleMenuSelection('2', 'COGS')">
+      Press 2: COGS
+    </button>
+    <button class="btn btn-menu" onclick="handleMenuSelection('3', 'Letter ID')">
+      Press 3: Letter ID
+    </button>
+    <button class="btn btn-menu" onclick="showVoiceInputScreen()">
+      Press 4: Tax Lookup VIA Voice or Text
+    </button>
+  </div>
+
+  <!-- Screen 3: Say or Type Tax Type -->
+  <div id="voiceScreen" class="voice-group hidden">
+    <button id="micBtn" class="btn btn-mic" onclick="toggleVoiceRecognition()">
+      🎤 Tap to Speak Tax Type
+    </button>
+    
+    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem;">— OR TYPE IT —</div>
+    
+    <div class="text-input-row">
+      <input type="text" id="manualInput" placeholder="e.g., Sales Tax, Meals, Estate" />
+      <button class="btn btn-send" onclick="submitManualInput()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: Route Success & Reset -->
+  <div id="routedScreen" class="hidden" style="text-align: center;">
+    <button class="btn btn-reset" style="width: 100%;" onclick="resetDemo()">
+      ↺ End Call / Restart Demo
+    </button>
+  </div>
+</div>
+
+<script>
+  // Simple Browser Speech Synthesis (Reads text aloud to mimic IVR prompts)
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function setStatus(msg) {
+    document.getElementById('statusBox').innerText = msg;
+  }
+
+  function startCall() {
+    document.getElementById('callBtn').classList.add('hidden');
+    document.getElementById('menuScreen').classList.remove('hidden');
+    document.getElementById('routedScreen').classList.remove('hidden');
+    
+    const introMsg = "Thank you for calling the Department of Revenue. Please select an option from the menu below.";
+    setStatus("Call Connected. Listening to automated menu...");
+    speak(introMsg);
+  }
+
+  function handleMenuSelection(optionNum, department) {
+    const response = `You selected option ${optionNum} for ${department}. Connecting you to a representative now.`;
+    setStatus(response);
+    speak(response);
+  }
+
+  function showVoiceInputScreen() {
+    document.getElementById('menuScreen').classList.add('hidden');
+    document.getElementById('voiceScreen').classList.remove('hidden');
+    
+    const promptMsg = "Please say or type the tax type you want to talk to a specialist about.";
+    setStatus(promptMsg);
+    speak(promptMsg);
+  }
+
+  function handleRoutingSuccess(taxType) {
+    document.getElementById('voiceScreen').classList.add('hidden');
+    const transferMsg = `Routing your call to a specialist in ${taxType}. Please hold.`;
+    setStatus(transferMsg);
+    speak(transferMsg);
+  }
+
+  function submitManualInput() {
+    const val = document.getElementById('manualInput').value.trim();
+    if (val) {
+      handleRoutingSuccess(val);
+    }
+  }
+
+  // Voice Recognition Handling
+  let recognition;
+  let isListening = false;
+
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = function() {
+      isListening = true;
+      const mic = document.getElementById('micBtn');
+      mic.classList.add('listening');
+      mic.innerText = "Listening... Speak now";
+    };
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      handleRoutingSuccess(transcript);
+    };
+
+    recognition.onerror = function(event) {
+      console.error(event.error);
+      setStatus("Could not hear clearly. Please try speaking again or use the text box.");
+      resetMicUI();
+    };
+
+    recognition.onend = function() {
+      resetMicUI();
+    };
+  }
+
+  function resetMicUI() {
+    isListening = false;
+    const mic = document.getElementById('micBtn');
+    mic.classList.remove('listening');
+    mic.innerText = "🎤 Tap to Speak Tax Type";
+  }
+
+  function toggleVoiceRecognition() {
+    if (!recognition) {
+      alert("Voice recognition is not supported on this browser version. Use the text box below.");
+      return;
+    }
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+  }
+
+  function resetDemo() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (recognition && isListening) recognition.stop();
+
+    document.getElementById('callBtn').classList.remove('hidden');
+    document.getElementById('menuScreen').classList.add('hidden');
+    document.getElementById('voiceScreen').classList.add('hidden');
+    document.getElementById('routedScreen').classList.add('hidden');
+    document.getElementById('manualInput').value = '';
+    setStatus("Press \"Call DOR\" to start the simulated call.");
+  }
+</script>
+
+</body>
+</html>

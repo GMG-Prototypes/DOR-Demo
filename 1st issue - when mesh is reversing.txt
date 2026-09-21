@@ -1,0 +1,14 @@
+1st issue - when mesh is reversing direction the head passes through the body in an unnatural way
+
+2nd issue - mesh bends too much making sharp angles/deformations
+
+3rd issue - head movement is locked in one direction
+
+4th issue when passing under an object the head and feet become detached from the ground and move toward that object and off the ground.
+
+Desired Options on truck
+Engine Block Heater
+Supplemental cabin heater
+Carpet
+FX4 Offroad package
+bed liner

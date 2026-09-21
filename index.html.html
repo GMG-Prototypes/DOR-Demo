@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOR Interactive Phone Demo</title>
+  <style>
+    /* Container for the seal + titles */
+    .dor-masthead {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 12px;
+    }
+
+    /* Scaled seal */
+    .dor-seal {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    /* Typography lockup */
+    .dor-titles {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .state-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .agency-title {
+      margin: 0;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #0c2340;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    /* Subtle gold divider */
+    .dor-accent-bar {
+      height: 3px;
+      background: linear-gradient(90deg, #d4af37 0%, #e2e8f0 85%);
+      border-radius: 2px;
+      margin-bottom: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+  margin: 0;
+  padding: 24px;
+  background-color: #0c2340;
+  /* Layer 1: Gradient mask that fades to dark navy at the bottom and edges */
+  /* Layer 2: The actual background photograph */
+  background-image: 
+    radial-gradient(circle at center, rgba(12, 35, 64, 0.35) 0%, rgba(12, 35, 64, 0.80) 75%, #0c2340 100%),
+    url('statehouse1.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+    .phone-container {
+      background: #ffffff;
+      width: 100%;
+      max-width: 520px;
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .status-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 1.05rem;
+      color: #334155;
+    }
+    .btn {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-call {
+      background: #10b981;
+      color: white;
+      font-size: 1.3rem;
+      padding: 20px;
+    }
+    .btn-menu {
+      background: #0284c7;
+      color: white;
+      text-align: left;
+      justify-content: flex-start;
+    }
+    .btn-mic {
+      background: #6366f1;
+      color: white;
+    }
+    .btn-mic.listening {
+      background: #ef4444;
+      animation: pulse 1.5s infinite;
+    }
+    .btn-reset {
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 0.95rem;
+      padding: 10px;
+    }
+    .menu-group, .voice-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .text-input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .text-input-row input {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .btn-send {
+      background: #0f172a;
+      color: white;
+      padding: 0 20px;
+    }
+    .btn-qr {
+      background: #475569;
+      color: white;
+      font-size: 0.95rem;
+      padding: 10px 16px;
+      margin-top: 4px;
+      width: 100%;
+    }
+    .scanner-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(12, 35, 64, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .scanner-box {
+      width: 220px;
+      height: 220px;
+      border: 3px solid #10b981;
+      border-radius: 16px;
+      position: relative;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+      background: rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .scanner-line {
+      width: 100%;
+      height: 3px;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      position: absolute;
+      animation: scanLaser 1.5s infinite alternate ease-in-out;
+    }
+    .hidden {
+      display: none !important;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    @keyframes scanLaser {
+      0% { top: 10%; }
+      100% { top: 90%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone-container">
+  <!-- Permanent Agency Header (Stays on every screen) -->
+  <header class="dor-masthead">
+    <img 
+      src="ma_seal.png" 
+      alt="Commonwealth of Massachusetts Seal" 
+      class="dor-seal" 
+    />
+    <div class="dor-titles">
+      <span class="state-label">COMMONWEALTH OF MASSACHUSETTS</span>
+      <h1 class="agency-title">Department of Revenue</h1>
+    </div>
+  </header>
+  <div class="dor-accent-bar"></div>
+
+  <!-- Status readout screen -->
+  <div id="statusBox" class="status-card">
+    Press "Call DOR" to start the simulated call.
+  </div>
+
+  <!-- Screen 1: Start Call -->
+  <button id="callBtn" class="btn btn-call" onclick="startCall()">
+    📞 Call DOR
+  </button>
+
+  <!-- Screen 2: Interactive Main Menu Options -->
+  <div id="menuScreen" class="menu-group hidden">
+    <button class="btn btn-menu" onclick="handleMenuSelection('1', 'Individual Income Tax Refund')">
+      Press 1: Individual Income Tax Refund
+    </button>
+    <button class="btn btn-menu" onclick="handleMenuSelection('2', 'COGS')">
+      Press 2: COGS
+    </button>
+    <button class="btn btn-menu" onclick="openLetterIdScreen()">
+      Press 3: Letter ID
+    </button>
+    <button class="btn btn-menu" onclick="showVoiceInputScreen()">
+      Press 4: To Speak or Type a Specific Account
+    </button>
+  </div>
+
+  <!-- Screen 3: Letter ID Input Screen -->
+  <div id="letterIdScreen" class="menu-group hidden">
+    <div class="text-input-row" style="margin-top: 8px;">
+      <input 
+        type="text" 
+        id="letterIdInput" 
+        placeholder="e.g., L1234567890" 
+        maxlength="11" 
+        autocomplete="off"
+        value=""
+        style="text-transform: uppercase;"
+        oninput="validateLetterIdInput(this)"
+      />
+      <button class="btn btn-send" onclick="submitLetterId()">Submit</button>
+    </div>
+    
+    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; margin: 4px 0;">— OR —</div>
+
+    <!-- Scan QR Code Button -->
+    <button class="btn btn-qr" onclick="startQrScan()">
+      📷 Scan Notice QR Code
+    </button>
+    
+    <div id="letterIdError" style="color: #ef4444; font-size: 0.85rem; text-align: center; min-height: 20px;"></div>
+
+    <button class="btn btn-reset" onclick="goBackToMainMenu('letterIdScreen')">
+      ← Back to Main Menu
+    </button>
+  </div>
+
+  <!-- Screen 3b: Choice Options After Letter ID Submission -->
+  <div id="letterActionScreen" class="menu-group hidden">
+    <button class="btn btn-menu" onclick="handleLetterChoice('1', 'Make a Payment')">
+      Press 1: Make a Payment
+    </button>
+    <button class="btn btn-menu" onclick="handleLetterChoice('2', 'Speak to a Specialist')">
+      Press 2: Speak to a Specialist
+    </button>
+
+    <button class="btn btn-reset" onclick="goBackToLetterIdScreen()">
+      ← Back to Letter ID Entry
+    </button>
+  </div>
+
+  <!-- Mock Scanner Overlay -->
+  <div id="qrOverlay" class="scanner-modal hidden" onclick="cancelQrScan()">
+    <div class="scanner-box" onclick="event.stopPropagation()">
+      <div class="scanner-line"></div>
+    </div>
+    <p style="color: #ffffff; margin-top: 18px; font-weight: 600; letter-spacing: 0.05em; text-align: center;">
+      Align QR code on notice within frame...
+    </p>
+    <button 
+      class="btn btn-reset" 
+      onclick="cancelQrScan()" 
+      style="margin-top: 12px; background: rgba(255,255,255,0.2); color: #ffffff; border: 1px solid rgba(255,255,255,0.4);"
+    >
+      Cancel Scan
+    </button>
+  </div>
+
+  <!-- Screen 4: Say or Type Tax Type -->
+  <div id="voiceScreen" class="voice-group hidden">
+    <button id="micBtn" class="btn btn-mic" onclick="toggleVoiceRecognition()">
+      🎤 Tap to Speak Tax Type
+    </button>
+    
+    <div style="text-align: center; color: #94a3b8; font-size: 0.85rem;">— OR TYPE IT —</div>
+    
+    <div class="text-input-row">
+      <input type="text" id="manualInput" placeholder="e.g., Sales Tax, Meals, Estate" />
+      <button class="btn btn-send" onclick="submitManualInput()">Submit</button>
+    </div>
+  </div>
+
+  <!-- Route Success & Reset -->
+  <div id="routedScreen" class="hidden" style="text-align: center;">
+    <button class="btn btn-reset" style="width: 100%;" onclick="resetDemo()">
+      ↺ End Call / Restart Demo
+    </button>
+  </div>
+</div>
+
+<script>
+  // Global audio player
+  let currentAudio = new Audio();
+
+  function playSound(fileName) {
+    if (currentAudio) {
+      currentAudio.pause();          
+      currentAudio.currentTime = 0;  
+    }
+    currentAudio.src = fileName;
+    currentAudio.play();
+  }
+
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  function setStatus(msg) {
+    document.getElementById('statusBox').innerText = msg;
+  }
+
+  function startCall() {
+    document.getElementById('callBtn').classList.add('hidden');
+    document.getElementById('menuScreen').classList.remove('hidden');
+    document.getElementById('routedScreen').classList.remove('hidden');
+    
+    setStatus("Call Connected. Listening to automated menu...");
+    playSound('greeting.mp3');
+  }
+
+  function handleMenuSelection(optionNum, department, audioFile) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    const response = `You selected option ${optionNum} for ${department}. Connecting you to a representative now.`;
+    setStatus(response);
+
+    if (audioFile) {
+      playSound(audioFile);
+    } else {
+      speak(response);
+    }
+  }
+
+  // Letter ID Screen Logic
+  function openLetterIdScreen() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // Clear input and previous error messages every time the screen opens
+    const inputField = document.getElementById('letterIdInput');
+    if (inputField) inputField.value = '';
+    const errBox = document.getElementById('letterIdError');
+    if (errBox) errBox.innerText = '';
+
+    document.getElementById('menuScreen').classList.add('hidden');
+    document.getElementById('letterIdScreen').classList.remove('hidden');
+
+    const promptMsg = "Please enter your letter ID, starting with capital L and 10 numbers.";
+    setStatus(promptMsg);
+    
+    // Play custom MP3 recording
+    playSound('letter_id_prompt.mp3');
+  }
+
+  function validateLetterIdInput(inputField) {
+    let val = inputField.value.toUpperCase();
+    
+    // Force first letter to be 'L' if user starts typing
+    if (val.length > 0 && val[0] !== 'L') {
+      val = 'L' + val.replace(/L/g, '');
+    }
+    
+    // Allow only numbers for remaining characters up to 10 digits
+    let prefix = val[0] || '';
+    let digits = val.slice(1).replace(/[^0-9]/g, '').slice(0, 10);
+    
+    inputField.value = prefix + digits;
+    document.getElementById('letterIdError').innerText = ''; 
+  }
+
+  function submitLetterId() {
+    const inputField = document.getElementById('letterIdInput');
+    const val = inputField.value.trim();
+    const errorBox = document.getElementById('letterIdError');
+
+    if (val.length !== 11 || !/^L[0-9]{10}$/.test(val)) {
+      errorBox.innerText = "Invalid format. Must be 'L' followed by exactly 10 digits.";
+      return;
+    }
+
+    errorBox.innerText = "";
+    
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // Hide input screen, show action buttons screen
+    document.getElementById('letterIdScreen').classList.add('hidden');
+    document.getElementById('letterActionScreen').classList.remove('hidden');
+
+    const promptMsg = `Letter ID ${val} verified. Please choose an option below.`;
+    setStatus(promptMsg);
+  }
+
+  function handleLetterChoice(optionNum, actionName) {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    const response = `You selected option ${optionNum} to ${actionName}. Connecting you now...`;
+    setStatus(response);
+    speak(response);
+  }
+
+  function goBackToLetterIdScreen() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // Clear field and error
+    const inputField = document.getElementById('letterIdInput');
+    if (inputField) inputField.value = '';
+    const errBox = document.getElementById('letterIdError');
+    if (errBox) errBox.innerText = '';
+
+    document.getElementById('letterActionScreen').classList.add('hidden');
+    document.getElementById('letterIdScreen').classList.remove('hidden');
+
+    setStatus("Please enter your letter ID, starting with capital L and 10 numbers.");
+    playSound('letter_id_prompt.mp3');
+  }
+
+  function goBackToMainMenu(currentScreenId) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    document.getElementById(currentScreenId).classList.add('hidden');
+    document.getElementById('menuScreen').classList.remove('hidden');
+
+    setStatus("Main Menu: Please choose an option.");
+  }
+
+  function startQrScan() {
+    // Stop any active audio or synthetic speech immediately
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    const overlay = document.getElementById('qrOverlay');
+    if (!overlay) return;
+    
+    // Show viewfinder overlay
+    overlay.classList.remove('hidden');
+
+    // 1.5-second scan simulation
+    setTimeout(() => {
+      // Close overlay
+      overlay.classList.add('hidden');
+      
+      // Populate the mock Letter ID
+      const mockId = 'L1234567890';
+      const inputField = document.getElementById('letterIdInput');
+      if (inputField) {
+        inputField.value = mockId;
+      }
+      
+      // Clear any prior errors and prompt user to proceed
+      document.getElementById('letterIdError').innerText = '';
+      setStatus(`Notice scanned: ${mockId} entered. Click "Submit" to proceed.`);
+    }, 2500);
+  }
+
+  function cancelQrScan() {
+    const overlay = document.getElementById('qrOverlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+      setStatus("Please enter your letter ID, starting with capital L and 10 numbers.");
+    }
+  }
+
+  function showVoiceInputScreen() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.src = '';
+    }
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+
+    document.getElementById('menuScreen').classList.add('hidden');
+    document.getElementById('voiceScreen').classList.remove('hidden');
+
+    const promptMsg = "Please say or type your account type.";
+    setStatus(promptMsg);
+    speak(promptMsg);
+  }
+
+  function handleRoutingSuccess(taxType) {
+    document.getElementById('voiceScreen').classList.add('hidden');
+    const transferMsg = `Routing your call to a specialist in ${taxType}. Please hold.`;
+    setStatus(transferMsg);
+    speak(transferMsg);
+  }
+
+  function submitManualInput() {
+    const val = document.getElementById('manualInput').value.trim();
+    if (val) {
+      handleRoutingSuccess(val);
+    }
+  }
+
+  // Voice Recognition Handling
+  let recognition;
+  let isListening = false;
+
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = function() {
+      isListening = true;
+      const mic = document.getElementById('micBtn');
+      mic.classList.add('listening');
+      mic.innerText = "Listening... Speak now";
+    };
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      handleRoutingSuccess(transcript);
+    };
+
+    recognition.onerror = function(event) {
+      console.error(event.error);
+      setStatus("Could not hear clearly. Please try speaking again or use the text box.");
+      resetMicUI();
+    };
+
+    recognition.onend = function() {
+      resetMicUI();
+    };
+  }
+
+  function resetMicUI() {
+    isListening = false;
+    const mic = document.getElementById('micBtn');
+    mic.classList.remove('listening');
+    mic.innerText = "🎤 Tap to Speak Tax Type";
+  }
+
+  function toggleVoiceRecognition() {
+    if (!recognition) {
+      alert("Voice recognition is not supported on this browser version. Use the text box below.");
+      return;
+    }
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+    }
+  }
+
+  function resetDemo() {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (recognition && isListening) recognition.stop();
+
+    document.getElementById('callBtn').classList.remove('hidden');
+    document.getElementById('menuScreen').classList.add('hidden');
+    document.getElementById('letterIdScreen').classList.add('hidden');
+    document.getElementById('letterActionScreen').classList.add('hidden');
+    document.getElementById('voiceScreen').classList.add('hidden');
+    document.getElementById('routedScreen').classList.add('hidden');
+    document.getElementById('manualInput').value = '';
+    
+    const letterInput = document.getElementById('letterIdInput');
+    if (letterInput) letterInput.value = '';
+    document.getElementById('letterIdError').innerText = '';
+
+    setStatus("Press \"Call DOR\" to start the simulated call.");
+  }
+
+  // Force field blank on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    const inputField = document.getElementById('letterIdInput');
+    if (inputField) inputField.value = '';
+  });
+</script>
+
+</body>
+</html>
