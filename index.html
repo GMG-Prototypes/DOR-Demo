@@ -1071,11 +1071,12 @@
     ],
     "Gasoline Fuel License and Tax": [
       "gasoline fuel license and tax", "gasoline tax", "gas tax", "motor fuel tax", 
-      "gas distributor", "fuel wholesaler", "form gt456"
+      "gas distributor", "fuel wholesaler", "form gt456", "gt456"
     ],
     "International Fuel Tax Agreement (IFTA)": [
-      "international fuel tax agreement", "if ta", "interstate trucking tax", 
-      "fuel decal", "motor carrier fuel tax", "quarterly ifta"
+      "international fuel tax agreement", "ifta", "i f t a", "if ta", "eye eff tee ay",
+      "interstate trucking tax", "fuel decal", "motor carrier fuel tax", 
+      "quarterly ifta", "trucking fuel tax", "carrier fuel"
     ],
     "Jet Fuel License and Tax": [
       "jet fuel license", "jet fuel tax", "aviation turbine fuel", 
@@ -1218,29 +1219,7 @@
     ]
   };
 
-  function normalizeSpokenInput(rawText) {
-    if (!rawText) return "";
-    
-    let text = rawText.toLowerCase();
-
-    // Map spoken digit words to numeric characters
-    const numberWords = {
-      " zero": " 0", " one": " 1", " two": " 2", " three": " 3", " four": " 4",
-      " five": " 5", " six": " 6", " seven": " 7", " eight": " 8", " nine": " 9"
-    };
-
-    for (const [word, digit] of Object.entries(numberWords)) {
-      text = text.replaceAll(word, digit);
-    }
-
-    // Collapse spaces/hyphens between isolated letters and digits:
-    // e.g. "ab 1" -> "ab1", "ct 1" -> "ct1", "st - 9" -> "st9", "63 d" -> "63d"
-    text = text.replace(/([a-z])\s*[-–—]?\s*([0-9]+)/gi, '$1$2');
-    text = text.replace(/([0-9]+)\s*[-–—]?\s*([a-z])/gi, '$1$2');
-
-    // Remove remaining non-alphanumeric punctuation except whitespace
-    return text.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-  }
+  function normalizeSpokenInput
 
   function matchTaxAccount(rawText) {
     if (!rawText) return null;
