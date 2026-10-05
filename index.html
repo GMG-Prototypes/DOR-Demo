@@ -1219,12 +1219,48 @@
     ]
   };
 
-  function normalizeSpokenInput
+  function normalizeSpokenInput(rawText) {
+    if (!rawText) return "";
+    
+    let text = rawText.toLowerCase();
+
+    // 1. Convert spoken digit words to numeric characters
+    const numberWords = {
+      "\\bzero\\b": "0", "\\bone\\b": "1", "\\btwo\\b": "2", "\\bthree\\b": "3", "\\bfour\\b": "4",
+      "\\bfive\\b": "5", "\\bsix\\b": "6", "\\bseven\\b": "7", "\\beight\\b": "8", "\\bnine\\b": "9"
+    };
+    for (const [pattern, digit] of Object.entries(numberWords)) {
+      text = text.replace(new RegExp(pattern, "gi"), digit);
+    }
+
+    // 2. Map common spelled-out letter phonetics
+    const phoneticLetters = {
+      "\\beye\\b": "i",
+      "\\beff\\b": "f",
+      "\\btee\\b": "t",
+      "\\bay\\b": "a",
+      "\\bsee\\b": "c",
+      "\\bpee\\b": "p"
+    };
+    for (const [pattern, letter] of Object.entries(phoneticLetters)) {
+      text = text.replace(new RegExp(pattern, "gi"), letter);
+    }
+
+    // 3. Remove punctuation, hyphens, and extra whitespace
+    text = text.replace(/[-–—_]/g, ' ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // 4. Collapse spaced individual letters and digits (e.g., "i f t a" -> "ifta", "a b 1" -> "ab1", "c t 1" -> "ct1")
+    text = text.replace(/\b([a-z0-9])\s+(?=[a-z0-9]\b)/gi, '$1');
+
+    // 5. Catch split two-syllable verbalisms (e.g., "if ta" -> "ifta")
+    text = text.replace(/\bif\s+ta\b/gi, 'ifta');
+
+    return text;
+  }
 
   function matchTaxAccount(rawText) {
     if (!rawText) return null;
     
-    // Create both standard cleaned and collapsed-form versions of input
     const normalizedInput = normalizeSpokenInput(rawText);
     if (!normalizedInput) return null;
 
@@ -1236,7 +1272,6 @@
         const cleanPhrase = normalizeSpokenInput(phrase);
         if (!cleanPhrase) continue;
 
-        // Match whole word or exact token sequence
         const regex = new RegExp(`(^|\\s)${cleanPhrase}(\\s|$)`, 'i');
         
         if (regex.test(normalizedInput)) {
