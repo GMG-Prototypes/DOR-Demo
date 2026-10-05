@@ -979,7 +979,7 @@
     ],
     "Miscellaneous Excise Bureau": [
       "miscellaneous excise", "misc excise", "miscellaneous excise bureau", 
-      "excise bureau", "special excise", "excise unit", "miscellaneous"
+      "excise bureau", "special excise", "excise unit"
     ],
     "Customer Service Bureau": [
       "customer service", "customer service bureau", "contact center", 
@@ -997,8 +997,8 @@
     ],
     "Alcoholic Beverages Excise": [
       "alcoholic beverages excise", "alcohol excise", "liquor excise", "beer tax", 
-      "wine tax", "distillery tax", "brewery", "wholesaler alcohol",
-      "abds", "ab-ds", "ab10", "ab-10", "form ab1", "ab one"
+      "wine tax", "distillery tax", "brewery", "wholesaler alcohol", "form ab-1", 
+      "abds", "ab-ds", "ab10", "ab-10", "ab-1", "ab1", "a b one"
     ],
     "Aviation Gasoline Tax": [
       "aviation gasoline tax", "aviation fuel", "avgas", "airplane fuel tax", 
@@ -1015,8 +1015,8 @@
     ],
     "Cigarette License and Tax": [
       "cigarette license and tax", "cigarette tax", "pack of cigarettes", 
-      "cigarette stamp", "tobacco license", "cigarette wholesale", "ct one", 
-      "ct8", "cigarette license", "cigarette retailer", "smokeless"
+      "cigarette stamp", "tobacco license", "cigarette wholesale", "form ct-1","ct-1", "ct1", 
+	  "ct 1", "c t 1", "c t one", "ct8" "cigarette license", "cigarette retailer"
     ],
     "Cigars License and Tax": [
       "cigars license and tax", "cigar tax", "smoking tobacco", "smokeless tobacco", 
@@ -1218,21 +1218,49 @@
     ]
   };
 
+  function normalizeSpokenInput(rawText) {
+    if (!rawText) return "";
+    
+    let text = rawText.toLowerCase();
+
+    // Map spoken digit words to numeric characters
+    const numberWords = {
+      " zero": " 0", " one": " 1", " two": " 2", " three": " 3", " four": " 4",
+      " five": " 5", " six": " 6", " seven": " 7", " eight": " 8", " nine": " 9"
+    };
+
+    for (const [word, digit] of Object.entries(numberWords)) {
+      text = text.replaceAll(word, digit);
+    }
+
+    // Collapse spaces/hyphens between isolated letters and digits:
+    // e.g. "ab 1" -> "ab1", "ct 1" -> "ct1", "st - 9" -> "st9", "63 d" -> "63d"
+    text = text.replace(/([a-z])\s*[-–—]?\s*([0-9]+)/gi, '$1$2');
+    text = text.replace(/([0-9]+)\s*[-–—]?\s*([a-z])/gi, '$1$2');
+
+    // Remove remaining non-alphanumeric punctuation except whitespace
+    return text.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
   function matchTaxAccount(rawText) {
     if (!rawText) return null;
     
-    const input = rawText.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').trim();
-    if (!input) return null;
+    // Create both standard cleaned and collapsed-form versions of input
+    const normalizedInput = normalizeSpokenInput(rawText);
+    if (!normalizedInput) return null;
 
     let bestMatch = null;
     let longestMatchLength = 0;
 
     for (const [accountQueue, keywords] of Object.entries(TAX_ACCOUNT_DICTIONARY)) {
       for (const phrase of keywords) {
-        const cleanPhrase = phrase.toLowerCase().trim();
+        const cleanPhrase = normalizeSpokenInput(phrase);
+        if (!cleanPhrase) continue;
+
+        // Match whole word or exact token sequence
         const regex = new RegExp(`(^|\\s)${cleanPhrase}(\\s|$)`, 'i');
         
-        if (regex.test(input)) {
+        if (regex.test(normalizedInput)) {
           if (cleanPhrase.length > longestMatchLength) {
             longestMatchLength = cleanPhrase.length;
             bestMatch = accountQueue;
