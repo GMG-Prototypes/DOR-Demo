@@ -1219,12 +1219,12 @@
     ]
   };
 
-  function normalizeSpokenInput(rawText) {
+function normalizeSpokenInput(rawText) {
     if (!rawText) return "";
     
     let text = rawText.toLowerCase();
 
-    // 1. Convert spoken digit words to numeric characters
+    // 1. Spoken numbers to digits
     const numberWords = {
       "\\bzero\\b": "0", "\\bone\\b": "1", "\\btwo\\b": "2", "\\bthree\\b": "3", "\\bfour\\b": "4",
       "\\bfive\\b": "5", "\\bsix\\b": "6", "\\bseven\\b": "7", "\\beight\\b": "8", "\\bnine\\b": "9"
@@ -1233,7 +1233,7 @@
       text = text.replace(new RegExp(pattern, "gi"), digit);
     }
 
-    // 2. Map common spelled-out letter phonetics
+    // 2. Spelled-out letter phonetics
     const phoneticLetters = {
       "\\beye\\b": "i",
       "\\beff\\b": "f",
@@ -1246,16 +1246,18 @@
       text = text.replace(new RegExp(pattern, "gi"), letter);
     }
 
-    // 3. Remove punctuation, hyphens, and extra whitespace
-    text = text.replace(/[-–—_]/g, ' ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    // 3. Remove punctuation & symbols
+    text = text.replace(/[-–—_.]/g, ' ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // 4. Collapse spaced individual letters and digits (e.g., "i f t a" -> "ifta", "a b 1" -> "ab1", "c t 1" -> "ct1")
-    text = text.replace(/\b([a-z0-9])\s+(?=[a-z0-9]\b)/gi, '$1');
+    // 4. Specific Common Speech-To-Text phonetic misses for IFTA
+    text = text.replace(/\b(if\s*ta|if\s*the|if\s*to|if\s*duh|f\s*ta)\b/gi, 'ifta');
 
-    // 5. Catch split two-syllable verbalisms (e.g., "if ta" -> "ifta")
-    text = text.replace(/\bif\s+ta\b/gi, 'ifta');
+    // 5. Repeatedly collapse isolated characters (e.g., "i f t a" -> "ifta", "a b 1" -> "ab1")
+    while (/\b([a-z0-9])\s+([a-z0-9])\b/i.test(text)) {
+      text = text.replace(/\b([a-z0-9])\s+([a-z0-9])\b/gi, '$1$2');
+    }
 
-    return text;
+    return text.trim();
   }
 
   function matchTaxAccount(rawText) {
