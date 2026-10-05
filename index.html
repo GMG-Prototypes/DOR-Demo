@@ -631,12 +631,10 @@
     document.getElementById('incomeTaxScreen').classList.add('hidden');
     document.getElementById('statusBox').classList.add('hidden');
 
-if (lastDigit % 2 === 0) {
+    if (lastDigit % 2 === 0) {
       // Even dollar amount -> Approved Screen
       restoreApprovedCard();
       document.getElementById('refundApprovedScreen').classList.remove('hidden');
-      
-      // Play your recorded refund approved readout
       playSound('refund_approved.mp3');
     } else {
       // Odd dollar amount -> Action Required / Denied Screen
@@ -716,7 +714,6 @@ if (lastDigit % 2 === 0) {
       `;
     }
 
-    // Play your transfer audio file (use 'connectingyounow.mp3' or your specific specialist audio file)
     playSound('connectingyounow.mp3');
   }
 
@@ -728,7 +725,6 @@ if (lastDigit % 2 === 0) {
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
-    // Reset input fields, storage, and errors
     rawSsnDigits = "";
     const ssnField = document.getElementById('ssnInput');
     const refundField = document.getElementById('refundInput');
@@ -737,22 +733,18 @@ if (lastDigit % 2 === 0) {
     if (refundField) refundField.value = '';
     if (errBox) errBox.innerText = '';
 
-    // Restore cards to original state
     restoreApprovedCard();
     restoreDeniedCard();
 
-    // Unhide the status card and reset its text
     document.getElementById('statusBox').classList.remove('hidden');
     const taxMsg = "Please enter your 9-digit Social Security Number and expected refund amount.";
     setStatus(taxMsg);
 
-    // Screen visibility toggling
     document.getElementById('menuScreen').classList.add('hidden');
     document.getElementById('refundResultScreen').classList.add('hidden');
     document.getElementById('refundApprovedScreen').classList.add('hidden');
     document.getElementById('incomeTaxScreen').classList.remove('hidden');
     
-    // Only play audio on initial entry or full reset
     if (playAudio) {
       playSound('income_tax_prompt.mp3');
     }
@@ -798,7 +790,6 @@ if (lastDigit % 2 === 0) {
     const promptMsg = "Please enter your letter ID, starting with capital L and 10 numbers.";
     setStatus(promptMsg);
 
-    // Only play audio on the initial entry
     if (!hasPlayedLetterIdPrompt) {
       playSound('letter_id_prompt.mp3');
       hasPlayedLetterIdPrompt = true;
@@ -833,14 +824,12 @@ if (lastDigit % 2 === 0) {
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
-    // Transition to the Letter Action Choice Screen
     document.getElementById('letterIdScreen').classList.add('hidden');
     document.getElementById('letterActionScreen').classList.remove('hidden');
 
     const promptMsg = `Letter ID ${val} verified. Please choose an option below.`;
     setStatus(promptMsg);
 
-    // Only play audio on the first verification; suppress on returns
     if (!hasPlayedLetterOptionsPrompt) {
       playSound('final_letter_menu.mp3');
       hasPlayedLetterOptionsPrompt = true;
@@ -892,9 +881,7 @@ if (lastDigit % 2 === 0) {
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
-    // Ensure statusBox is visible on Main Menu
     document.getElementById('statusBox').classList.remove('hidden');
-
     document.getElementById(currentScreenId).classList.add('hidden');
     document.getElementById('menuScreen').classList.remove('hidden');
 
@@ -959,11 +946,323 @@ if (lastDigit % 2 === 0) {
     setStatus(transferMsg);
     speak(transferMsg);
   }
+  
+// ==========================================
+  // Master Account, Bureau & Synonym Dictionary
+  // ==========================================
+  const TAX_ACCOUNT_DICTIONARY = {
+    // --- Operational & Internal Bureaus ---
+    "Collections Bureau": [
+      "collections", "collections bureau", "collection", "past due balance", 
+      "levy", "lien", "payment plan", "installment agreement", "bill pay", 
+      "notice of assessment", "collections unit", "compliance", "delinquent tax", "intercept"
+    ],
+    "Audit Bureau": [
+      "audit", "audit bureau", "auditor", "desk audit", "field audit", 
+      "audit division", "tax examiner", "examination", "under audit"
+    ],
+    "Appeals & Dispute Resolution": [
+      "appeals", "dispute", "dispute resolution", "office of appeals", 
+      "abatement appeal", "settlement", "hearing officer"
+    ],
+    "Bankruptcy Unit": [
+      "bankruptcy", "bankruptcy unit", "chapter 7", "chapter 11", "chapter 13", 
+      "proof of claim", "automatic stay", "insolvency"
+    ],
+    "Problem Resolution Office (PRO)": [
+      "problem resolution", "problem resolution office", "pro", "taxpayer advocate", 
+      "ombudsman", "hardship"
+    ],
+    "Trustee Taxes / Trustee Bureau": [
+      "trustee", "trustee taxes", "trustee bureau", "trustee tax unit", 
+      "trustee accounts", "responsible person", "personal liability assessment"
+    ],
+    "Miscellaneous Excise Bureau": [
+      "miscellaneous excise", "misc excise", "miscellaneous excise bureau", 
+      "excise bureau", "special excise", "excise unit"
+    ],
+    "Customer Service Bureau": [
+      "customer service", "customer service bureau", "contact center", 
+      "general questions", "representative", "agent", "operator", "help desk"
+    ],
+
+    // --- Specific Tax Types & Statutory Accounts ---
+    "63 Entity Level Tax": [
+      "63 entity level tax", "entity level tax", "63d", "63e", "pte excise", 
+      "pass through excise", "salt cap workaround", "form 63d", "form 63-elt", "63d-elt"
+    ],
+    "Abandoned Bottle Deposit": [
+      "abandoned bottle deposit", "bottle deposit", "bottle bill", "can deposit", 
+      "beverage container deposit", "unclaimed bottle deposits", "cans"
+    ],
+    "Alcoholic Beverages Excise": [
+      "alcoholic beverages excise", "alcohol excise", "liquor excise", "beer tax", 
+      "wine tax", "distillery tax", "brewery", "wholesaler alcohol", "form ab-1", 
+      "abds", "ab-ds", "ab10", "ab-10"
+    ],
+    "Aviation Gasoline Tax": [
+      "aviation gasoline tax", "aviation fuel", "avgas", "airplane fuel tax", 
+      "aircraft gasoline", "airport fuel"
+    ],
+    "Boats Recreational Vehicles Tax": [
+      "boats recreational vehicles tax", "boat tax", "recreational vehicle tax", 
+      "rv tax", "boat sales tax", "atv tax", "snowmobile tax", "watercraft tax", 
+      "form st-6", "st6"
+    ],
+    "Care and Custody": [
+      "care and custody", "custody accounts", "safekeeping fee", "sheriff custody", 
+      "escrow custody", "custody account", "seized property tax"
+    ],
+    "Cigarette License and Tax": [
+      "cigarette license and tax", "cigarette tax", "pack of cigarettes", 
+      "cigarette stamp", "tobacco license", "cigarette wholesale", "form ct-1", 
+      "ct8", "cigarette license", "cigarette retailer"
+    ],
+    "Cigars License and Tax": [
+      "cigars license and tax", "cigar tax", "smoking tobacco", "smokeless tobacco", 
+      "cigar license", "cigar distributor", "cigar2", "cigar retailer"
+    ],
+    "Club Alcohol Excise": [
+      "club alcohol excise", "club liquor", "social club alcohol", 
+      "veterans club liquor", "fraternal order alcohol", "country club alcohol tax"
+    ],
+    "Corporate Combined Excise": [
+      "corporate combined excise", "combined reporting", "form 355u", "unitary group", 
+      "combined group return", "combined corporate"
+    ],
+    "Corporate Excise": [
+      "corporate excise", "corporation tax", "form 355", "form 355s", "c-corp tax", 
+      "s-corp tax", "business corporate tax", "corporate minimum tax", "corporate excise bureau"
+    ],
+    "Deeds Excise": [
+      "deeds excise", "deed tax", "real estate transfer tax", "conveyance tax", 
+      "deed stamps", "recording tax"
+    ],
+    "Deeds Excise – Registry": [
+      "deeds excise registry", "registry of deeds", "registry excise", "county registry deeds"
+    ],
+    "Electronic Nicotine Deliv Sys Lic & Tax": [
+      "electronic nicotine deliv sys license", "ends tax", "vape tax", "vaping license", 
+      "e-cigarette tax", "electronic nicotine", "vape distributor", "e-liquid tax", 
+      "form ends", "ends"
+    ],
+    "Emergency Paid Sick Leave": [
+      "emergency paid sick leave", "epsl", "covid sick leave", "massachusetts emergency paid sick leave"
+    ],
+    "Estate Tax": [
+      "estate tax", "inheritance tax", "probate tax", "form m-706", "decedent tax", 
+      "death tax", "estate release of lien"
+    ],
+    "Ferry Embarkation Fee": [
+      "ferry embarkation fee", "ferry fee", "ferry passenger tax", "boat embarkation", 
+      "commuter boat fee", "island ferry fee"
+    ],
+    "Fiduciary Income Tax": [
+      "fiduciary income tax", "fiduciary tax", "trust tax", "form 2", "estate income tax", 
+      "trustee return", "beneficiary income"
+    ],
+    "Financial Institution Excise": [
+      "financial institution excise", "bank tax", "form 63-fi", "banking excise", 
+      "credit union tax", "lending institution tax"
+    ],
+    "Gambling Withholding": [
+      "gambling withholding", "casino withholding", "sports betting withholding", 
+      "slot withholding", "winnings withholding", "form w-2g"
+    ],
+    "Gasoline Fuel License and Tax": [
+      "gasoline fuel license and tax", "gasoline tax", "gas tax", "motor fuel tax", 
+      "gas distributor", "fuel wholesaler", "form gt456"
+    ],
+    "International Fuel Tax Agreement (IFTA)": [
+      "international fuel tax agreement", "ifta", "interstate trucking tax", 
+      "fuel decal", "motor carrier fuel tax", "quarterly ifta"
+    ],
+    "Jet Fuel License and Tax": [
+      "jet fuel license", "jet fuel tax", "aviation turbine fuel", 
+      "commercial jet fuel", "form jft4s", "jft4u", "jet fuel user seller", "jet fuel supplier"
+    ],
+    "Life Insurance Excise": [
+      "life insurance excise", "life insurance company tax", "insurance company premium", 
+      "form 63-20", "domestic life insurance"
+    ],
+    "Lottery Annuity Withholding": [
+      "lottery annuity withholding", "mass lottery withholding", "scratch ticket withholding", 
+      "lottery jackpot withholding", "annuity prize withholding"
+    ],
+    "Marijuana Retail Taxes": [
+      "marijuana retail taxes", "cannabis tax", "marijuana excise", "dispensary tax", 
+      "weed tax", "adult use cannabis", "mrt1"
+    ],
+    "Meals Food & Beverage Tax": [
+      "meals food & beverage tax", "meals tax", "restaurant tax", "prepared food tax", 
+      "bakery tax", "catering tax", "food and drink tax"
+    ],
+    "Meals Tax": [
+      "meals tax", "local meals", "restaurant meals", "form st-mab-4"
+    ],
+    "Miscellaneous Tax Refund": [
+      "miscellaneous tax refund", "general tax refund", "special refund", "misc refund"
+    ],
+    "Motor Vehicle Excise": [
+      "motor vehicle excise", "vehicle excise", "car excise", "registry vehicle tax", 
+      "town vehicle excise", "annual car tax"
+    ],
+    "Motor Vehicle Sales": [
+      "motor vehicle sales", "car sales tax", "auto sales tax", "form st-7r", 
+      "rmv sales tax", "truck sales tax", "private party vehicle tax"
+    ],
+    "Non-Profit Tax": [
+      "non-profit tax", "non profit", "nonprofit exempt", "form 3m", "501c3 tax", 
+      "charitable exemption", "unrelated business income", "st-2 certificate"
+    ],
+    "Nonresident Composite Tax": [
+      "nonresident composite tax", "composite tax", "form non-res", "nonresident partner return", 
+      "composite return", "form 355 composite"
+    ],
+    "Ocean Marine Insurance Tax": [
+      "ocean marine insurance tax", "marine insurance", "underwriting profit tax", "form 63-29a"
+    ],
+    "Oil Spill Fee": [
+      "oil spill fee", "petroleum cleanup fee", "oil transfer fee", "form os1", "marine oil fee"
+    ],
+    "Other Fees and Penalties": [
+      "other fees and penalties", "late payment penalty", "filing fees", "dor interest charge", 
+      "audit penalties", "non compliance fee"
+    ],
+    "Out of State Contractor": [
+      "out of state contractor", "nonresident contractor", "contractor bond", 
+      "foreign contractor", "form st-5c", "construction withholding"
+    ],
+    "P&C - PPO Insurance Excise": [
+      "p&c ppo insurance excise", "property and casualty insurance", "ppo insurance tax", 
+      "casualty insurance", "form 63-23"
+    ],
+    "Paid Family and Medical Leave": [
+      "paid family and medical leave", "pfml", "paid medical leave", "family leave tax", 
+      "dfml contribution", "maternity leave tax"
+    ],
+    "Parking Facilities Surcharge": [
+      "parking facilities surcharge", "parking surcharge", "boston parking surcharge", 
+      "commercial parking fee", "parking tax"
+    ],
+    "Partnership Income Tax": [
+      "partnership income tax", "partnership tax", "form 3", "schedule 3k-1", 
+      "k1 tax", "general partnership", "llc partnership"
+    ],
+    "Pass-Through Entity Withholding": [
+      "pass-through entity withholding", "pte withholding", "pass through withholding", 
+      "form pte-wh", "nonresident member withholding"
+    ],
+    "Pension Withholding": [
+      "pension withholding", "retirement withholding", "401k withholding", 
+      "annuity withholding", "ira distribution tax"
+    ],
+    "Performer Withholding": [
+      "performer withholding", "entertainer withholding", "athlete withholding", 
+      "visiting performer tax", "form pwh"
+    ],
+    "Public Utility Excise": [
+      "public utility excise", "utility tax", "electric company excise", 
+      "gas utility tax", "telecom utility", "form p.u.e."
+    ],
+    "Real Estate Withholding": [
+      "real estate withholding", "property sale withholding", "nonresident real estate", 
+      "land transfer withholding"
+    ],
+    "Room Occupancy Consolidated": [
+      "room occupancy consolidated", "consolidated lodging", "hotel chain occupancy", 
+      "multi-location room tax"
+    ],
+    "Room Occupancy Tax": [
+      "room occupancy tax", "hotel tax", "motel tax", "lodging tax", "airbnb tax", 
+      "vrbo tax", "short term rental tax", "form ro-2"
+    ],
+    "Sales Tax": [
+      "sales tax", "retail sales", "vendor tax", "state sales tax", "form st9", 
+      "resale tax", "merchandise tax"
+    ],
+    "Sales Tax Services": [
+      "sales tax services", "taxable services", "telecom sales tax", "custom software tax", 
+      "security service tax", "cleaning services tax"
+    ],
+    "Satellite Service Tax": [
+      "satellite service tax", "satellite tv tax", "direct broadcast satellite", "dish network tax"
+    ],
+    "Sight Seeing Tours Surcharge": [
+      "sight seeing tours surcharge", "sightseeing surcharge", "tour bus surcharge", 
+      "trolley tour fee", "boston tour surcharge", "duck boat surcharge"
+    ],
+    "Special Fuels License and Tax": [
+      "special fuels license", "special fuel tax", "diesel tax", "cng tax", 
+      "lng tax", "biodiesel tax", "form sft3", "sft4"
+    ],
+    "Underground Storage Tank Delivery Fee": [
+      "underground storage tank delivery fee", "ust fee", "storage tank fee", 
+      "gas tank delivery fee", "tank petroleum fee"
+    ],
+    "Urban Redevelopment Excise": [
+      "urban redevelopment excise", "chapter 121a", "121a excise", "redevelopment corporation tax", 
+      "urban housing excise"
+    ],
+    "Use Tax": [
+      "use tax", "out of state use tax", "internet purchase use tax", "form st-10", 
+      "unpaid sales tax", "business use tax"
+    ],
+    "Vehicular Rental Surcharge": [
+      "vehicular rental surcharge", "car rental surcharge", "rental car fee", 
+      "convention center rental fee", "auto rental tax"
+    ],
+    "Withholding Tax": [
+      "withholding tax", "payroll tax", "wage withholding", "employee withholding", 
+      "form w-2", "form m-941", "w-4 withholding", "employer withholding"
+    ]
+  };
+
+  function matchTaxAccount(rawText) {
+    if (!rawText) return null;
+    
+    const input = rawText.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').trim();
+    if (!input) return null;
+
+    let bestMatch = null;
+    let longestMatchLength = 0;
+
+    for (const [accountQueue, keywords] of Object.entries(TAX_ACCOUNT_DICTIONARY)) {
+      for (const phrase of keywords) {
+        const cleanPhrase = phrase.toLowerCase().trim();
+        const regex = new RegExp(`(^|\\s)${cleanPhrase}(\\s|$)`, 'i');
+        
+        if (regex.test(input)) {
+          if (cleanPhrase.length > longestMatchLength) {
+            longestMatchLength = cleanPhrase.length;
+            bestMatch = accountQueue;
+          }
+        }
+      }
+    }
+
+    return bestMatch;
+  }
+
+  function handleTaxAccountInput(rawInput) {
+    const matchedQueue = matchTaxAccount(rawInput);
+
+    if (matchedQueue) {
+      handleRoutingSuccess(matchedQueue);
+    } else {
+      const fallbackPrompt = "I'm sorry, I didn't recognize that account. Please say or type a valid tax type such as Sales Tax, Meals, Withholding, or Corporate Excise.";
+      setStatus(fallbackPrompt);
+      speak(fallbackPrompt);
+
+      const manualBox = document.getElementById('manualInput');
+      if (manualBox) manualBox.value = '';
+    }
+  }
 
   function submitManualInput() {
     const val = document.getElementById('manualInput').value.trim();
     if (val) {
-      handleRoutingSuccess(val);
+      handleTaxAccountInput(val);
     }
   }
 
@@ -986,7 +1285,7 @@ if (lastDigit % 2 === 0) {
 
     recognition.onresult = function(event) {
       const transcript = event.results[0][0].transcript;
-      handleRoutingSuccess(transcript);
+      handleTaxAccountInput(transcript);
     };
 
     recognition.onerror = function(event) {
@@ -1025,7 +1324,6 @@ if (lastDigit % 2 === 0) {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (recognition && isListening) recognition.stop();
 
-    // Ensure statusBox is visible upon reset
     document.getElementById('statusBox').classList.remove('hidden');
 
     document.getElementById('incomeTaxScreen').classList.add('hidden');
@@ -1052,11 +1350,9 @@ if (lastDigit % 2 === 0) {
     if (refundField) refundField.value = '';
     if (errBox) errBox.innerText = '';
 
-    // Restore cards to default state
     restoreApprovedCard();
     restoreDeniedCard();
 
-    // Reassign session flags
     hasPlayedLetterOptionsPrompt = false;
     hasPlayedLetterIdPrompt = false;
 
@@ -1070,5 +1366,3 @@ if (lastDigit % 2 === 0) {
 </script>
 </body>
 </html>
-
-<!-- Build refresh trigger -->
