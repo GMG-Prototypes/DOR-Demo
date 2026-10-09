@@ -438,7 +438,7 @@
 
   <!-- Screen 3b: Choice Options After Letter ID Submission -->
   <div id="letterActionScreen" class="menu-group hidden">
-    <button class="btn btn-menu" onclick="handleLetterChoice('1', 'Make a Payment')">
+    <button id="makePaymentBtn" class="btn btn-menu" onclick="handleMakePaymentChoice()">
       Press 1: Make a Payment
     </button>
     <button class="btn btn-menu" onclick="handleLetterChoice('2', 'Speak to a Specialist')">
@@ -479,10 +479,25 @@
       <input type="text" id="manualInput" placeholder="e.g., Sales Tax, Meals, Estate" />
       <button class="btn btn-send" onclick="submitManualInput()">Submit</button>
     </div>
+
+    <!-- Back to Main Menu Button -->
+    <button class="btn btn-reset" onclick="goBackToMainMenu('voiceScreen')">
+      ← Back to Main Menu
+    </button>
   </div>
 
-  <!-- Route Success & Reset -->
-  <div id="routedScreen" class="hidden" style="text-align: center;">
+<!-- Route Success & Reset -->
+  <div id="routedScreen" class="hidden" style="text-align: center; display: flex; flex-direction: column; gap: 10px;">
+    <!-- Back to Voice/Type Search Button -->
+    <button id="btnBackToVoiceSearch" class="btn btn-reset hidden" style="width: 100%;" onclick="retryVoiceSearch()">
+      ← Try Another Search
+    </button>
+
+    <!-- Back to Main Menu Button -->
+    <button id="btnBackToMainMenuFromRoute" class="btn btn-reset hidden" style="width: 100%;" onclick="returnToMainMenuFromRouting()">
+      ← Back to Main Menu
+    </button>
+
     <button class="btn btn-reset" style="width: 100%;" onclick="resetDemo()">
       ↺ End Call / Restart Demo
     </button>
@@ -510,13 +525,15 @@
   function playSound(fileName) {
     if (currentAudio) {
       currentAudio.pause();          
-      currentAudio.currentTime = 0;  
+      currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     currentAudio.src = fileName;
     const playPromise = currentAudio.play();
     if (playPromise !== undefined) {
       playPromise.catch(error => {
         console.warn(`Playback prevented or failed for ${fileName}:`, error);
+        alert(`AUDIO ERROR: The browser cannot find "${fileName}". Please ensure this file is saved in the exact same folder as the HTML file you are currently viewing.`);
       });
     }
   }
@@ -546,6 +563,7 @@
   function handleMenuSelection(optionNum, department, audioFile) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
+    currentAudio.onended = null;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
     const response = `You selected option ${optionNum} for ${department}. Connecting you to a representative now.`;
@@ -592,7 +610,7 @@
     }
 
     if (val.length > 0) {
-      input.value = '$' + val;
+      input.value = '\$' + val;
     } else {
       input.value = '';
     }
@@ -600,10 +618,10 @@
   }
 
   function submitIncomeTaxInquiry() {
-    // Cut any currently playing prompt immediately
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -615,29 +633,25 @@
       return;
     }
 
-    if (!refundField.value || refundField.value === '$') {
+    if (!refundField.value || refundField.value === '\$') {
       errorBox.innerText = "Please enter your expected refund amount.";
       return;
     }
 
     errorBox.innerText = "";
 
-    // Determine parity based on whole dollar value so cents don't accidentally invert logic
     const cleanAmount = refundField.value.replace(/[^0-9.]/g, '');
     const dollarValue = cleanAmount.split('.')[0] || "0";
     const lastDigit = parseInt(dollarValue.slice(-1), 10);
 
-    // Transition from entry screen
     document.getElementById('incomeTaxScreen').classList.add('hidden');
     document.getElementById('statusBox').classList.add('hidden');
 
     if (lastDigit % 2 === 0) {
-      // Even dollar amount -> Approved Screen
       restoreApprovedCard();
       document.getElementById('refundApprovedScreen').classList.remove('hidden');
       playSound('refund_approved.mp3');
     } else {
-      // Odd dollar amount -> Action Required / Denied Screen
       restoreDeniedCard();
       document.getElementById('refundResultScreen').classList.remove('hidden');
       playSound('refund_denied.mp3');
@@ -678,6 +692,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -698,6 +713,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -717,11 +733,11 @@
     playSound('connectingyounow.mp3');
   }
 
-  // Individual Income Tax Screen Logic
   function openIncomeTaxScreen(playAudio = true) {
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -736,7 +752,7 @@
     restoreApprovedCard();
     restoreDeniedCard();
 
-    document.getElementById('statusBox').classList.remove('hidden');
+    document.getElementById('statusBox').classList.add('hidden');
     const taxMsg = "Please enter your 9-digit Social Security Number and expected refund amount.";
     setStatus(taxMsg);
 
@@ -750,11 +766,11 @@
     }
   }
 
-  // COGS Screen Logic
   function openCogsScreen() {
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -767,7 +783,6 @@
     playSound('cogs_prompt.mp3');
   }
 
-  // State flags to prevent Letter ID audio prompts from looping on returns
   let hasPlayedLetterOptionsPrompt = false;
   let hasPlayedLetterIdPrompt = false;
 
@@ -775,6 +790,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -807,12 +823,14 @@
     document.getElementById('letterIdError').innerText = ''; 
   }
 
-  function submitLetterId() {
+function submitLetterId() {
     const inputField = document.getElementById('letterIdInput');
-    const val = inputField.value.trim();
+    // Force uppercase and remove hidden spaces
+    const val = inputField.value.trim().toUpperCase();
     const errorBox = document.getElementById('letterIdError');
 
-    if (val.length !== 11 || !/^L[0-9]{10}$/.test(val)) {
+    // Bulletproof validation without regex symbols
+    if (val.length !== 11 || !val.startsWith('L')) {
       errorBox.innerText = "Invalid format. Must be 'L' followed by exactly 10 digits.";
       return;
     }
@@ -821,6 +839,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -836,19 +855,32 @@
     }
   }
 
+  function handleMakePaymentChoice() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.onended = null;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    setStatus("Connected to P.A.M.M. (Payments & Accounts Manager for Massachusetts)");
+    
+    // Plays your newly combined audio track
+    playSound('connecting_pamm_combo.mp3');
+  }
+
   function handleLetterChoice(optionNum, actionName) {
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
     const response = `You selected option ${optionNum} to ${actionName}. Connecting you now...`;
     setStatus(response);
 
-    if (optionNum === '1') {
-      playSound('connectingyounow.mp3');
-    } else if (optionNum === '2') {
+    if (optionNum === '2') {
       playSound('connectingyounow.mp3');
     } else {
       speak(response);
@@ -859,6 +891,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -878,8 +911,16 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (typeof recognition !== 'undefined' && recognition && isListening) {
+      recognition.stop();
+      resetMicUI();
+    }
+
+    const manualBox = document.getElementById('manualInput');
+    if (manualBox) manualBox.value = '';
 
     document.getElementById('statusBox').classList.remove('hidden');
     document.getElementById(currentScreenId).classList.add('hidden');
@@ -892,6 +933,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
     }
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
@@ -924,6 +966,7 @@
     if (typeof currentAudio !== 'undefined' && currentAudio) {
       currentAudio.pause();
       currentAudio.currentTime = 0;
+      currentAudio.onended = null;
       currentAudio.src = '';
     }
 
@@ -940,18 +983,82 @@
     speak(promptMsg);
   }
 
-  function handleRoutingSuccess(taxType) {
+ function handleRoutingSuccess(taxType) {
     document.getElementById('voiceScreen').classList.add('hidden');
+    
+    // Reveal navigation buttons
+    const backSearchBtn = document.getElementById('btnBackToVoiceSearch');
+    if (backSearchBtn) backSearchBtn.classList.remove('hidden');
+
+    const backMenuBtn = document.getElementById('btnBackToMainMenuFromRoute');
+    if (backMenuBtn) backMenuBtn.classList.remove('hidden');
+
     const transferMsg = `Routing your call to a specialist in ${taxType}. Please hold.`;
     setStatus(transferMsg);
     speak(transferMsg);
   }
+
+  function retryVoiceSearch() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.onended = null;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // Hide the routing buttons
+    const backSearchBtn = document.getElementById('btnBackToVoiceSearch');
+    if (backSearchBtn) backSearchBtn.classList.add('hidden');
+
+    const backMenuBtn = document.getElementById('btnBackToMainMenuFromRoute');
+    if (backMenuBtn) backMenuBtn.classList.add('hidden');
+
+    // Reset the manual input field
+    const manualBox = document.getElementById('manualInput');
+    if (manualBox) manualBox.value = '';
+
+    document.getElementById('statusBox').classList.remove('hidden');
+    document.getElementById('voiceScreen').classList.remove('hidden');
+
+    const promptMsg = "Please say or type your account type.";
+    setStatus(promptMsg);
+    speak(promptMsg);
+  }
+
+  function returnToMainMenuFromRouting() {
+    if (typeof currentAudio !== 'undefined' && currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio.onended = null;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (typeof recognition !== 'undefined' && recognition && isListening) {
+      recognition.stop();
+      resetMicUI();
+    }
+
+    // Hide routing helper buttons
+    const backSearchBtn = document.getElementById('btnBackToVoiceSearch');
+    if (backSearchBtn) backSearchBtn.classList.add('hidden');
+
+    const backMenuBtn = document.getElementById('btnBackToMainMenuFromRoute');
+    if (backMenuBtn) backMenuBtn.classList.add('hidden');
+
+    const manualBox = document.getElementById('manualInput');
+    if (manualBox) manualBox.value = '';
+
+    // Switch view to Main Menu
+    document.getElementById('voiceScreen').classList.add('hidden');
+    document.getElementById('statusBox').classList.remove('hidden');
+    document.getElementById('menuScreen').classList.remove('hidden');
+
+    setStatus("Main Menu: Please choose an option.");
+  }
   
-// ==========================================
+  // ==========================================
   // Master Account, Bureau & Synonym Dictionary
   // ==========================================
   const TAX_ACCOUNT_DICTIONARY = {
-    // --- Operational & Internal Bureaus ---
     "Collections Bureau": [
       "collections", "collections bureau", "collection", "past due balance", 
       "levy", "lien", "payment plan", "installment agreement", "bill pay", 
@@ -979,14 +1086,12 @@
     ],
     "Miscellaneous Excise Bureau": [
       "miscellaneous excise", "misc excise", "miscellaneous excise bureau", 
-      "excise bureau", "special excise", "excise unit"
+      "excise bureau", "special excise", "excise unit", "miscellaneous"
     ],
     "Customer Service Bureau": [
       "customer service", "customer service bureau", "contact center", 
       "general questions", "representative", "agent", "operator", "help desk"
     ],
-
-    // --- Specific Tax Types & Statutory Accounts ---
     "63 Entity Level Tax": [
       "63 entity level tax", "entity level tax", "63d", "63e", "pte excise", 
       "pass through excise", "salt cap workaround", "form 63d", "form 63-elt", "63d-elt"
@@ -998,7 +1103,7 @@
     "Alcoholic Beverages Excise": [
       "alcoholic beverages excise", "alcohol excise", "liquor excise", "beer tax", 
       "wine tax", "distillery tax", "brewery", "wholesaler alcohol", "form ab-1", 
-      "abds", "ab-ds", "ab10", "ab-10", "ab-1", "ab1", "a b one"
+      "abds", "ab-ds", "ab10", "ab-10", "ab-1", "ab1", "a b one", "alco bev", "alcoholic beverages"
     ],
     "Aviation Gasoline Tax": [
       "aviation gasoline tax", "aviation fuel", "avgas", "airplane fuel tax", 
@@ -1096,7 +1201,7 @@
     ],
     "Meals Food & Beverage Tax": [
       "meals food & beverage tax", "meals tax", "restaurant tax", "prepared food tax", 
-      "bakery tax", "catering tax", "food and drink tax"
+      "bakery tax", "catering tax", "food and drink tax", "meals"
     ],
     "Meals Tax": [
       "meals tax", "local meals", "restaurant meals", "form st-mab-4"
@@ -1180,7 +1285,7 @@
     ],
     "Sales Tax": [
       "sales tax", "retail sales", "vendor tax", "state sales tax", "form st9", 
-      "resale tax", "merchandise tax"
+      "resale tax", "merchandise tax", "sales", "s t 9", "st-9", "st9"
     ],
     "Sales Tax Services": [
       "sales tax services", "taxable services", "telecom sales tax", "custom software tax", 
@@ -1219,12 +1324,11 @@
     ]
   };
 
-function normalizeSpokenInput(rawText) {
+  function normalizeSpokenInput(rawText) {
     if (!rawText) return "";
     
     let text = rawText.toLowerCase();
 
-    // 1. Spoken numbers to digits
     const numberWords = {
       "\\bzero\\b": "0", "\\bone\\b": "1", "\\btwo\\b": "2", "\\bthree\\b": "3", "\\bfour\\b": "4",
       "\\bfive\\b": "5", "\\bsix\\b": "6", "\\bseven\\b": "7", "\\beight\\b": "8", "\\bnine\\b": "9"
@@ -1233,7 +1337,6 @@ function normalizeSpokenInput(rawText) {
       text = text.replace(new RegExp(pattern, "gi"), digit);
     }
 
-    // 2. Spelled-out letter phonetics
     const phoneticLetters = {
       "\\beye\\b": "i",
       "\\beff\\b": "f",
@@ -1246,15 +1349,11 @@ function normalizeSpokenInput(rawText) {
       text = text.replace(new RegExp(pattern, "gi"), letter);
     }
 
-    // 3. Remove punctuation & symbols
     text = text.replace(/[-–—_.]/g, ' ').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-
-    // 4. Specific Common Speech-To-Text phonetic misses for IFTA
     text = text.replace(/\b(if\s*ta|if\s*the|if\s*to|if\s*duh|f\s*ta)\b/gi, 'ifta');
 
-    // 5. Repeatedly collapse isolated characters (e.g., "i f t a" -> "ifta", "a b 1" -> "ab1")
     while (/\b([a-z0-9])\s+([a-z0-9])\b/i.test(text)) {
-      text = text.replace(/\b([a-z0-9])\s+([a-z0-9])\b/gi, '$1$2');
+      text = text.replace(/\b([a-z0-9])\s+([a-z0-9])\b/gi, '\$1\$2');
     }
 
     return text.trim();
@@ -1365,6 +1464,8 @@ function normalizeSpokenInput(rawText) {
   function resetDemo() {
     currentAudio.pause();
     currentAudio.currentTime = 0;
+    currentAudio.onended = null;
+    currentAudio.onerror = null;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (recognition && isListening) recognition.stop();
 
@@ -1385,6 +1486,8 @@ function normalizeSpokenInput(rawText) {
     const letterInput = document.getElementById('letterIdInput');
     if (letterInput) letterInput.value = '';
     document.getElementById('letterIdError').innerText = '';
+	const backSearchBtn = document.getElementById('btnBackToVoiceSearch');
+    if (backSearchBtn) backSearchBtn.classList.add('hidden');
 
     rawSsnDigits = "";
     const ssnField = document.getElementById('ssnInput');
@@ -1408,5 +1511,6 @@ function normalizeSpokenInput(rawText) {
     if (inputField) inputField.value = '';
   });
 </script>
+
 </body>
 </html>
